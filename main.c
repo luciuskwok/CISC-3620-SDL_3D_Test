@@ -196,7 +196,6 @@ void update_state() {
 void run_render_pipeline() {
 	// Render frame buffer
 	SDL_UpdateTexture(texture, NULL, pixels, pixels_w * sizeof(uint32_t));
-	SDL_RenderClear(renderer);
 	SDL_RenderCopy(renderer, texture, NULL, &window_rect);
 	SDL_RenderPresent(renderer);
 }
