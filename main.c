@@ -190,10 +190,21 @@ void process_keyboard_input() {
 		is_running = false;
 		break;
 	case SDL_KEYDOWN:
-		if (event.key.keysym.sym == SDLK_ESCAPE) {
+		switch (event.key.keysym.sym) {
+		case SDLK_ESCAPE:
 			// Exit program
 			is_running = false;
-		} 
+			break;
+		case SDLK_0:
+			// Static display
+			animation_mode = 0;
+			break;
+		case SDLK_1:
+			// Animated display
+			animation_mode = 1;
+			break;
+		// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
+		}
 		break;
 	}
 }
