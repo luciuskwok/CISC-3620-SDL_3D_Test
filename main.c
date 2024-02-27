@@ -26,6 +26,8 @@ uint32_t frame_index;
 vec3_t cube_model[CUBE_POINT_COUNT];
 vec2_t projected_points[CUBE_POINT_COUNT];
 
+// Camera
+vec3_t camera_position = { 0.0f, 0.0f, 2.0f };
 
 // Functions
 
@@ -41,8 +43,27 @@ void build_cube_model() {
 	}
 }
 
+void translate_cube_model(vec3_t offset) {
+	for (int i = 0; i < CUBE_POINT_COUNT; i++) {
+		vec3_t pt = cube_model[i];
+		pt.x += offset.x;
+		pt.y += offset.y;
+		pt.z += offset.z;
+		cube_model[i] = pt;
+	}
+}
+
 vec2_t orthographic_project_point(vec3_t pt3d) {
 	vec2_t pt2d = { .x = pt3d.x, .y = pt3d.y };
+	return pt2d;
+}
+
+vec2_t perspective_project_point(vec3_t pt3d) {
+	// Apply camera position
+	pt3d.x += camera_position.x;
+	pt3d.y += camera_position.y;
+	pt3d.z += camera_position.z;
+	vec2_t pt2d = { .x = pt3d.x / pt3d.z, .y = pt3d.y / pt3d.z };
 	return pt2d;
 }
 
@@ -50,7 +71,8 @@ void project_model() {
 	// Project the 3d model into 2d space
 	for (int i = 0; i < CUBE_POINT_COUNT; i++) {
 		vec3_t pt3d = cube_model[i];
-		vec2_t pt2d = orthographic_project_point(pt3d);
+		//vec2_t pt2d = orthographic_project_point(pt3d);
+		vec2_t pt2d = perspective_project_point(pt3d);
 		projected_points[i] = pt2d;
 	}
 }
@@ -178,6 +200,12 @@ void update_state() {
 	// Clear frame buffer
 	clear(0x000000FF);
 
+	// Variable for camera movement
+	float t = frame_index % 120;
+	t = t / 60.0f;
+	camera_position.x = sinf(t * 3.14159f);
+	camera_position.y = cosf(t * 3.14159f);
+
 	// Draw a 5x5 rect at every projected point
 	project_model();
 	scale_projection();
@@ -205,6 +233,7 @@ int main(int argc, char* argv[]) {
 
 	if (!initialize_windowing_system()) return 0;
 
+	// Create the cube model
 	build_cube_model();
 
 	// Game loop
