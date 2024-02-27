@@ -17,6 +17,7 @@ uint32_t* pixels;
 int pixels_w, pixels_h;
 SDL_Rect window_rect;
 bool is_running;
+int animation_mode;
 
 // Global state for rendering
 uint32_t frame_index;
@@ -27,7 +28,7 @@ vec3_t cube_model[CUBE_POINT_COUNT];
 vec2_t projected_points[CUBE_POINT_COUNT];
 
 // Camera
-vec3_t camera_position = { 0.0f, 0.0f, 2.0f };
+vec3_t camera_position = { 0.0f, 0.0f, -5.0f };
 
 // Functions
 
@@ -60,9 +61,9 @@ vec2_t orthographic_project_point(vec3_t pt3d) {
 
 vec2_t perspective_project_point(vec3_t pt3d) {
 	// Apply camera position
-	pt3d.x += camera_position.x;
-	pt3d.y += camera_position.y;
-	pt3d.z += camera_position.z;
+	pt3d.x -= camera_position.x;
+	pt3d.y -= camera_position.y;
+	pt3d.z -= camera_position.z;
 	vec2_t pt2d = { .x = pt3d.x / pt3d.z, .y = pt3d.y / pt3d.z };
 	return pt2d;
 }
@@ -79,7 +80,7 @@ void project_model() {
 
 void scale_projection() {
 	// Apply a scaling factor to the projected points
-	const int factor = 240;
+	const int factor = 640;
 	for (int i = 0; i < CUBE_POINT_COUNT; i++) {
 		projected_points[i].x *= factor;
 		projected_points[i].y *= factor;
@@ -185,13 +186,14 @@ void process_keyboard_input() {
 	// Keyboard interaction
 	switch (event.type) {
 	case SDL_QUIT: // when 'X' button is pressed in window titlebar
-		// do something
+		// Exit program
 		is_running = false;
 		break;
 	case SDL_KEYDOWN:
 		if (event.key.keysym.sym == SDLK_ESCAPE) {
+			// Exit program
 			is_running = false;
-		}
+		} 
 		break;
 	}
 }
@@ -201,10 +203,16 @@ void update_state() {
 	clear(0x000000FF);
 
 	// Variable for camera movement
-	float t = frame_index % 120;
-	t = t / 60.0f;
-	camera_position.x = sinf(t * 3.14159f);
-	camera_position.y = cosf(t * 3.14159f);
+	if (animation_mode == 0) {
+		camera_position.x = 0.0f;
+		camera_position.y = 0.0f;
+	}
+	else if (animation_mode == 1) {
+		float t = frame_index % 120;
+		t = t / 60.0f;
+		camera_position.x = sinf(t * M_PI);
+		camera_position.y = cosf(t * M_PI);
+	}
 
 	// Draw a 5x5 rect at every projected point
 	project_model();
@@ -235,6 +243,8 @@ int main(int argc, char* argv[]) {
 
 	// Create the cube model
 	build_cube_model();
+
+	animation_mode = 0;
 
 	// Game loop
 	is_running = true;
