@@ -109,6 +109,40 @@ void draw_centered_rect(int x, int y, int w, int h, uint32_t color) {
 	}
 }
 
+void update_state() {
+	// Clear frame buffer
+	clear(0x000000FF);
+
+	// Time variable
+	const float pi = (float)M_PI;
+	float t = (float)(frame_index % 120) / 60.0f;
+
+	// Variable for camera movement
+	switch (animation_mode) {
+	case 1:
+		// Translate camera in a circle;
+		camera_position.x = sinf(t * pi);
+		camera_position.y = cosf(t * pi);
+		break;
+	case 2:
+		// Rotate the 2d transform
+		transform_2d = matrix3_identity();
+		matrix3_rotate(&transform_2d, t * pi);
+		break;
+	case 3:
+		// Unused for now
+		break;
+	default:
+		// Static camera, but transform stays the same
+		camera_position.x = 0.0f;
+		camera_position.y = 0.0f;
+		break;
+	}
+
+	// Update frame index
+	frame_index++;
+}
+
 bool initialize_windowing_system() {
 	// Set up SDL
 	if (SDL_Init(SDL_INIT_EVERYTHING) != 0) {
@@ -214,36 +248,7 @@ void process_keyboard_input() {
 	}
 }
 
-void update_state() {
-	// Clear frame buffer
-	clear(0x000000FF);
-
-	// Time variable
-	const float pi = (float)M_PI;
-	float t = (float)(frame_index % 120) / 60.0f;
-
-	// Variable for camera movement
-	switch (animation_mode) {
-	case 1:
-		// Translate camera in a circle;
-		camera_position.x = sinf(t * pi);
-		camera_position.y = cosf(t * pi);
-		break;
-	case 2:
-		// Rotate the 2d transform
-		transform_2d = matrix3_identity();
-		matrix3_rotate(&transform_2d, t * pi);
-		break;
-	case 3:
-		// Unused for now
-		break;
-	default:
-		// Static camera, but transform stays the same
-		camera_position.x = 0.0f;
-		camera_position.y = 0.0f;
-		break;
-	}
-
+void run_render_pipeline() {
 	// Draw a 5x5 rect at every projected point
 	project_model();
 	scale_projection();
@@ -255,11 +260,6 @@ void update_state() {
 		draw_centered_rect(cx + (int)pt.x, cy + (int)pt.y, 5, 5, color);
 	}
 
-	// Update frame index
-	frame_index++;
-}
-
-void run_render_pipeline() {
 	// Render frame buffer
 	SDL_UpdateTexture(texture, NULL, pixels, pixels_w * sizeof(uint32_t));
 	SDL_RenderCopy(renderer, texture, NULL, &window_rect);

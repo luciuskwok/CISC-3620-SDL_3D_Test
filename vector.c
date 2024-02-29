@@ -27,15 +27,20 @@ matrix3_t matrix3_identity() {
 }
 
 void matrix3_translate(matrix3_t* m, float tx, float ty) {
-
+	m->m02 += tx;
+	m->m12 += ty;
 }
 
 void matrix3_scale(matrix3_t* m, float sx, float sy) {
-
+	m->m00 *= sx;
+	m->m11 *= sy;
 }
 
 void matrix3_rotate(matrix3_t* m, float a) {
-
+	m->m00 = cosf(a);
+	m->m01 = -sinf(a);
+	m->m10 = sinf(a);
+	m->m11 = cosf(a);
 }
 
 matrix4_t matrix4_identity() {
