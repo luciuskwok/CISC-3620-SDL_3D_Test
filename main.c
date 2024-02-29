@@ -26,7 +26,8 @@ uint32_t frame_index;
 #define CUBE_POINT_COUNT (9*9*9)
 vec3_t cube_model[CUBE_POINT_COUNT];
 vec2_t projected_points[CUBE_POINT_COUNT];
-float cube_transform[9];
+matrix3_t transform_2d;
+matrix4_t transform_3d;
 
 // Camera
 vec3_t camera_position = { 0.0f, 0.0f, -5.0f };
@@ -43,63 +44,9 @@ void build_cube_model() {
 			}
 		}
 	}
-	float transform[] = {
-		1, 0, 0,
-		0, 1, 0,
-		0, 0, 1
-	};
-	for (int i = 0; i < 9; i++) {
-		cube_transform[i] = transform[i];
-	}
-}
 
-void translate_cube_model(vec3_t offset) {
-	for (int i = 0; i < CUBE_POINT_COUNT; i++) {
-		vec3_t pt = cube_model[i];
-		pt.x += offset.x;
-		pt.y += offset.y;
-		pt.z += offset.z;
-		cube_model[i] = pt;
-	}
-}
-
-vec3_t subtract_vec3(vec3_t a, vec3_t b) {
-	a.x -= b.x;
-	a.y -= b.y;
-	a.z -= b.z;
-	return a;
-}
-
-void set_identity_transform(float t[]) {
-	t[0] = 1; t[1] = 0; t[2] = 0;
-	t[3] = 1; t[4] = 1; t[5] = 0;
-	t[6] = 1; t[7] = 0; t[8] = 1;
-}
-
-void apply_z_rotation_transform(float t[], float angle) {
-	t[0] *= cosf(angle);
-	t[1] *= -sinf(angle);
-	t[2] *= 0;
-
-	t[3] *= sinf(angle);
-	t[4] *= cosf(angle);
-	t[5] *= 0;
-
-	t[6] *= 0;
-	t[7] *= 0;
-	t[8] *= 1;
-}
-
-vec3_t multiply_transform(vec3_t pt, float t[]) {
-	vec3_t a = { 0, 0, 0 };
-
-	for (int i = 0; i < 3; i++) {
-		a.x += pt.x * t[i * 3 + 0];
-		a.y += pt.y * t[i * 3 + 1];
-		a.z += pt.z * t[i * 3 + 2];
-	}
-
-	return a;
+	transform_2d = matrix3_identity();
+	transform_3d = matrix4_identity();
 }
 
 vec2_t orthographic_project_point(vec3_t pt3d) {
@@ -109,12 +56,15 @@ vec2_t orthographic_project_point(vec3_t pt3d) {
 
 vec2_t perspective_project_point(vec3_t pt3d) {
 	// Apply transform
-	pt3d = multiply_transform(pt3d, cube_transform);
+	//pt3d = multiply_transform(pt3d, cube_transform);
 
 	// Apply camera position
-	pt3d = subtract_vec3(pt3d, camera_position);
+	pt3d = vec3_subtract(pt3d, camera_position);
 
 	vec2_t pt2d = { .x = pt3d.x / pt3d.z, .y = pt3d.y / pt3d.z };
+
+	// Apply 2d transform
+
 	return pt2d;
 }
 
@@ -250,12 +200,13 @@ void process_keyboard_input() {
 			animation_mode = 0;
 			break;
 		case SDLK_1:
-			// Animated camera
 			animation_mode = 1;
 			break;
 		case SDLK_2:
-			// Animated cube
 			animation_mode = 2;
+			break;
+		case SDLK_3:
+			animation_mode = 3;
 			break;
 			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
 		}
@@ -268,21 +219,29 @@ void update_state() {
 	clear(0x000000FF);
 
 	// Time variable
-	float t = frame_index % 120;
-	t = t / 60.0f;
+	const float pi = (float)M_PI;
+	float t = (float)(frame_index % 120) / 60.0f;
 
 	// Variable for camera movement
-	if (animation_mode == 0) {
+	switch (animation_mode) {
+	case 1:
+		// Translate camera in a circle;
+		camera_position.x = sinf(t * pi);
+		camera_position.y = cosf(t * pi);
+		break;
+	case 2:
+		// Rotate the 2d transform
+		transform_2d = matrix3_identity();
+		matrix3_rotate(&transform_2d, t * pi);
+		break;
+	case 3:
+		// Unused for now
+		break;
+	default:
+		// Static camera, but transform stays the same
 		camera_position.x = 0.0f;
 		camera_position.y = 0.0f;
-	}
-	else if (animation_mode == 1) {
-		camera_position.x = sinf(t * M_PI);
-		camera_position.y = cosf(t * M_PI);
-	}
-	else if (animation_mode == 2) {
-		set_identity_transform(cube_transform);
-		apply_z_rotation_transform(cube_transform, t * M_PI);
+		break;
 	}
 
 	// Draw a 5x5 rect at every projected point
