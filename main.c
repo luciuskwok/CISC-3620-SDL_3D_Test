@@ -26,6 +26,7 @@ uint32_t frame_index;
 #define CUBE_POINT_COUNT (9*9*9)
 vec3_t cube_model[CUBE_POINT_COUNT];
 vec2_t projected_points[CUBE_POINT_COUNT];
+float cube_transform[9];
 
 // Camera
 vec3_t camera_position = { 0.0f, 0.0f, -5.0f };
@@ -42,6 +43,14 @@ void build_cube_model() {
 			}
 		}
 	}
+	float transform[] = {
+		1, 0, 0,
+		0, 1, 0,
+		0, 0, 1
+	};
+	for (int i = 0; i < 9; i++) {
+		cube_transform[i] = transform[i];
+	}
 }
 
 void translate_cube_model(vec3_t offset) {
@@ -54,16 +63,37 @@ void translate_cube_model(vec3_t offset) {
 	}
 }
 
+vec3_t subtract_vec3(vec3_t a, vec3_t b) {
+	a.x -= b.x;
+	a.y -= b.y;
+	a.z -= b.z;
+	return a;
+}
+
+vec3_t multiply_transform(vec3_t pt, float transform[]) {
+	vec3_t a = { 0, 0, 0 };
+
+	for (int i = 0; i < 3; i++) {
+		a.x += pt.x * transform[i * 3 + 0];
+		a.y += pt.y * transform[i * 3 + 1];
+		a.z += pt.z * transform[i * 3 + 2];
+	}
+
+	return a;
+}
+
 vec2_t orthographic_project_point(vec3_t pt3d) {
 	vec2_t pt2d = { .x = pt3d.x, .y = pt3d.y };
 	return pt2d;
 }
 
 vec2_t perspective_project_point(vec3_t pt3d) {
+	// Apply transform
+	pt3d = multiply_transform(pt3d, cube_transform);
+
 	// Apply camera position
-	pt3d.x -= camera_position.x;
-	pt3d.y -= camera_position.y;
-	pt3d.z -= camera_position.z;
+	pt3d = subtract_vec3(pt3d, camera_position);
+
 	vec2_t pt2d = { .x = pt3d.x / pt3d.z, .y = pt3d.y / pt3d.z };
 	return pt2d;
 }
