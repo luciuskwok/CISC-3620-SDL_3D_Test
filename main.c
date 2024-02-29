@@ -70,13 +70,33 @@ vec3_t subtract_vec3(vec3_t a, vec3_t b) {
 	return a;
 }
 
-vec3_t multiply_transform(vec3_t pt, float transform[]) {
+void set_identity_transform(float t[]) {
+	t[0] = 1; t[1] = 0; t[2] = 0;
+	t[3] = 1; t[4] = 1; t[5] = 0;
+	t[6] = 1; t[7] = 0; t[8] = 1;
+}
+
+void apply_z_rotation_transform(float t[], float angle) {
+	t[0] *= cosf(angle);
+	t[1] *= -sinf(angle);
+	t[2] *= 0;
+
+	t[3] *= sinf(angle);
+	t[4] *= cosf(angle);
+	t[5] *= 0;
+
+	t[6] *= 0;
+	t[7] *= 0;
+	t[8] *= 1;
+}
+
+vec3_t multiply_transform(vec3_t pt, float t[]) {
 	vec3_t a = { 0, 0, 0 };
 
 	for (int i = 0; i < 3; i++) {
-		a.x += pt.x * transform[i * 3 + 0];
-		a.y += pt.y * transform[i * 3 + 1];
-		a.z += pt.z * transform[i * 3 + 2];
+		a.x += pt.x * t[i * 3 + 0];
+		a.y += pt.y * t[i * 3 + 1];
+		a.z += pt.z * t[i * 3 + 2];
 	}
 
 	return a;
@@ -230,10 +250,14 @@ void process_keyboard_input() {
 			animation_mode = 0;
 			break;
 		case SDLK_1:
-			// Animated display
+			// Animated camera
 			animation_mode = 1;
 			break;
-		// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
+		case SDLK_2:
+			// Animated cube
+			animation_mode = 2;
+			break;
+			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
 		}
 		break;
 	}
@@ -243,16 +267,22 @@ void update_state() {
 	// Clear frame buffer
 	clear(0x000000FF);
 
+	// Time variable
+	float t = frame_index % 120;
+	t = t / 60.0f;
+
 	// Variable for camera movement
 	if (animation_mode == 0) {
 		camera_position.x = 0.0f;
 		camera_position.y = 0.0f;
 	}
 	else if (animation_mode == 1) {
-		float t = frame_index % 120;
-		t = t / 60.0f;
 		camera_position.x = sinf(t * M_PI);
 		camera_position.y = cosf(t * M_PI);
+	}
+	else if (animation_mode == 2) {
+		set_identity_transform(cube_transform);
+		apply_z_rotation_transform(cube_transform, t * M_PI);
 	}
 
 	// Draw a 5x5 rect at every projected point
