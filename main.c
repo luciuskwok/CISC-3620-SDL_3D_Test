@@ -64,6 +64,7 @@ vec2_t perspective_project_point(vec3_t pt3d) {
 	vec2_t pt2d = { .x = pt3d.x / pt3d.z, .y = pt3d.y / pt3d.z };
 
 	// Apply 2d transform
+	pt2d = vec2_matrix3_multiply(pt2d, transform_2d);
 
 	return pt2d;
 }
@@ -72,7 +73,6 @@ void project_model() {
 	// Project the 3d model into 2d space
 	for (int i = 0; i < CUBE_POINT_COUNT; i++) {
 		vec3_t pt3d = cube_model[i];
-		//vec2_t pt2d = orthographic_project_point(pt3d);
 		vec2_t pt2d = perspective_project_point(pt3d);
 		projected_points[i] = pt2d;
 	}
@@ -116,6 +116,7 @@ void update_state() {
 	// Time variable
 	const float pi = (float)M_PI;
 	float t = (float)(frame_index % 120) / 60.0f;
+	float tx, ty;
 
 	// Variable for camera movement
 	switch (animation_mode) {
@@ -123,19 +124,29 @@ void update_state() {
 		// Translate camera in a circle;
 		camera_position.x = sinf(t * pi);
 		camera_position.y = cosf(t * pi);
+		transform_2d = matrix3_identity();
 		break;
 	case 2:
 		// Rotate the 2d transform
+		camera_position.x = 0.0f;
+		camera_position.y = 0.0f;
 		transform_2d = matrix3_identity();
+		tx = sinf(t * pi) * 0.25f;
+		ty = cosf(t * pi) * 0.25f;
+		//matrix3_translate(&transform_2d, tx, ty);
 		matrix3_rotate(&transform_2d, t * pi);
 		break;
 	case 3:
 		// Unused for now
+		camera_position.x = 0.0f;
+		camera_position.y = 0.0f;
+		transform_2d = matrix3_identity();
 		break;
 	default:
 		// Static camera, but transform stays the same
 		camera_position.x = 0.0f;
 		camera_position.y = 0.0f;
+		transform_2d = matrix3_identity();
 		break;
 	}
 
