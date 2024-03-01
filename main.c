@@ -9,7 +9,7 @@
 
 #include "vector.h"
 
-#define c ((float)(M_PI))
+#define M_PI_F ((float)(M_PI))
 #define M_PI_2_F ((float)(M_PI * 2.0))
 
 
@@ -31,8 +31,11 @@ uint32_t frame_index;
 vec3_t cube_model[CUBE_POINT_COUNT];
 vec2_t projected_points[CUBE_POINT_COUNT];
 mat3_t transform_2d;
-matrix4_t transform_3d;
+mat4_t transform_3d;
 float angle;
+
+// Momemtum
+float pitch, roll, yaw; // how many degrees per second of rotation
 
 // Camera
 vec3_t camera_position = { 0.0f, 0.0f, -5.0f };
@@ -51,7 +54,7 @@ void build_cube_model() {
 	}
 	
 	mat3_get_identity(transform_2d);
-	transform_3d = matrix4_identity();
+	mat4_get_identity(transform_3d);
 }
 
 vec2_t orthographic_project_point(vec3_t pt3d, float scale2d) {
@@ -65,7 +68,7 @@ vec2_t orthographic_project_point(vec3_t pt3d, float scale2d) {
 
 vec2_t perspective_project_point(vec3_t pt3d, float scale2d) {
 	// Apply 3d transform
-	//pt3d = multiply_transform(pt3d, cube_transform);
+	pt3d = vec3_mat4_multiply(pt3d, transform_3d);
 
 	// Apply camera position
 	pt3d = vec3_subtract(pt3d, camera_position);
@@ -140,6 +143,12 @@ void update_state() {
 		camera_position.y = 0.0f;
 		break;
 	}
+
+	// Update rotation 
+	float increment = (M_PI_F / 180.f) / 60.0f; // 1 deg/sec divided by 60 fps
+	mat4_pitch(transform_3d, pitch * increment);
+	mat4_roll(transform_3d, roll * increment);
+	mat4_yaw(transform_3d, yaw * increment);
 
 	// Update frame index
 	frame_index++;
@@ -219,6 +228,7 @@ void process_keyboard_input() {
 	SDL_Event event;
 	SDL_PollEvent(&event);
 
+
 	// Keyboard interaction
 	switch (event.type) {
 	case SDL_QUIT: // when 'X' button is pressed in window titlebar
@@ -227,33 +237,50 @@ void process_keyboard_input() {
 		break;
 	case SDL_KEYDOWN:
 		switch (event.key.keysym.sym) {
-		case SDLK_ESCAPE:
-			// Exit program
-			is_running = false;
-			break;
-		case SDLK_0:
-			// Static display
-			animation_mode = 0;
-			mat3_get_identity(transform_2d);
-			transform_3d = matrix4_identity();
-			angle = 0;
-			break;
-		case SDLK_1:
-			animation_mode = 1;
-			break;
-		case SDLK_2:
-			animation_mode = 2;
-			break;
-		case SDLK_e:
-			// Advance rotation by 1/36 of a circle
-			mat3_rotate(transform_2d, M_PI_2_F / 36);
-			break;
-			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
-		case SDLK_q:
-			// Advance rotation by 1/36 of a circle
-			mat3_rotate(transform_2d, -M_PI_2_F / 36);
-			break;
-			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
+			case SDLK_ESCAPE:
+				// Exit program
+				is_running = false;
+				break;
+			case SDLK_0:
+				// Reset all state variables and positions
+				animation_mode = 0;
+				mat3_get_identity(transform_2d);
+				mat4_get_identity(transform_3d);
+				angle = 0;
+				pitch = 0;
+				roll = 0;
+				yaw = 0;
+				break;
+			case SDLK_1:
+				animation_mode = 1;
+				break;
+			case SDLK_2:
+				animation_mode = 2;
+				break;
+			case SDLK_e:
+				// Roll right
+				roll += 1.0f;
+				break;
+			case SDLK_q:
+				// Roll left
+				roll -= 1.0f;
+				break;
+			case SDLK_w:
+				// Pitch down
+				pitch += 1.0f;
+				break;
+			case SDLK_s:
+				// Pitch up
+				pitch -= 1.0f;
+				break;
+			case SDLK_a:
+				// Yaw left
+				yaw += 1.0f;
+				break;
+			case SDLK_d:
+				// Yaw right
+				yaw -= 1.0f;
+				break;
 		}
 		break;
 	}
@@ -286,6 +313,9 @@ int main(int argc, char* argv[]) {
 
 	animation_mode = 0;
 	angle = 0;
+	pitch = 0;
+	roll = 0;
+	yaw = 0;
 
 	// Game loop
 	is_running = true;

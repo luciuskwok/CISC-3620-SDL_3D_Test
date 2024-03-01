@@ -1,5 +1,10 @@
 // vector.c
 
+// Sources:
+// Rotation calculations based on https://msl.cs.uiuc.edu/planning/node102.html
+// Matrix multiplication based on https://mathinsight.org/matrix_vector_multiplication
+
+
 #include "vector.h"
 #include <math.h>
 
@@ -32,33 +37,33 @@ void mat3_get_identity(mat3_t m) {
 }
 
 void mat3_translate(mat3_t m, float tx, float ty) {
-	mat3_t n = {
+	mat3_t t = {
 		1, 0, tx,
 		0, 1, ty,
 		0, 0, 1
 	};
-	mat3_multiply(m, n, m);
+	mat3_multiply(m, t, m);
 }
 
 void mat3_scale(mat3_t m, float sx, float sy) {
-	mat3_t n = {
+	mat3_t s = {
 		sx, 0, 0,
 		0, sy, 0,
 		0, 0, 1
 	};
-	mat3_multiply(m, n, m);
+	mat3_multiply(m, s, m);
 }
 
 void mat3_rotate(mat3_t m, float a) {
-	mat3_t n = {
+	mat3_t r = {
 		cosf(a), -sinf(a), 0,
 		sinf(a), cos(a), 0,
 		0, 0, 1
 	};
-	mat3_multiply(m, n, m);
+	mat3_multiply(m, r, m);
 }
 
-void mat3_multiply(mat3_t a, mat3_t b, mat3_t result) {
+void mat3_multiply(const mat3_t a, const mat3_t b, mat3_t result) {
 	// Store results in a temporary matrix before copying to results
 	mat3_t tmp;
 
@@ -80,7 +85,7 @@ void mat3_multiply(mat3_t a, mat3_t b, mat3_t result) {
 	}
 }
 
-vec2_t vec2_mat3_multiply(vec2_t a, mat3_t m) {
+vec2_t vec2_mat3_multiply(const vec2_t a, const mat3_t m) {
 	vec2_t b;
 	float w;
 	b.x = m[0][0] * a.x + m[0][1] * a.y + m[0][2];
@@ -90,81 +95,98 @@ vec2_t vec2_mat3_multiply(vec2_t a, mat3_t m) {
 }
 
 
-matrix3_struct_t matrix3_identity() {
-	matrix3_struct_t m = {
-		1, 0, 0,
-		0, 1, 0,
-		0, 0, 1
+void mat4_get_identity(mat4_t m) {
+	m[0][0] = 1; m[0][1] = 0; m[0][2] = 0; m[0][3] = 0;
+	m[1][0] = 0; m[1][1] = 1; m[1][2] = 0; m[1][3] = 0;
+	m[2][0] = 0; m[2][1] = 0; m[2][2] = 1; m[2][3] = 0;
+	m[3][0] = 0; m[3][1] = 0; m[3][2] = 1; m[3][3] = 1;
+}
+
+void mat4_translate(mat4_t m, float tx, float ty, float tz) {
+	mat4_t t = {
+		1, 0, 0, tx,
+		0, 1, 0, ty,
+		0, 0, 1, tz,
+		0, 0, 0, 1
 	};
-	return m;
+	mat4_multiply(m, t, m);
 }
 
-void matrix3_translate(matrix3_struct_t* m, float tx, float ty) {
-	m->m02 += tx;
-	m->m12 += ty;
+void mat4_scale(mat4_t m, float sx, float sy, float sz) {
+	mat4_t s = {
+		sx, 0, 0, 0,
+		0, sy, 0, 0,
+		0, 0, sz, 0,
+		0, 0, 0, 1
+	};
+	mat4_multiply(m, s, m);
 }
 
-void matrix3_scale(matrix3_struct_t* m, float sx, float sy) {
-	m->m00 *= sx;
-	m->m11 *= sy;
-}
-
-void matrix3_rotate(matrix3_struct_t* m, float a) {
-	m->m00 = cosf(a);
-	m->m01 = -sinf(a);
-	m->m02 = 0.0f;
-	m->m10 = sinf(a);
-	m->m11 = cosf(a);
-	m->m12 = 0.0f;
-	m->m20 = 0.0f;
-	m->m21 = 0.0f;
-	m->m22 = 1.0f;
-}
-
-vec2_t vec2_matrix3_multiply(vec2_t a, matrix3_struct_t m) {
-	vec2_t b;
-	b.x = m.m00 * a.x + m.m01 * a.y + m.m02;
-	b.y = m.m10 * a.x + m.m11 * a.y + m.m12;
-	float w = m.m20 * a.x + m.m21 * a.y + m.m22;
-
-	//b.x = b.x / w;
-	//b.y = b.y / w;
-	return b;
-}
-
-matrix4_t matrix4_identity() {
-	matrix4_t m = {
-		1, 0, 0, 0,
+void mat4_pitch(mat4_t m, float a) {
+	mat4_t r = {
+		cosf(a), 0, sinf(a), 0,
 		0, 1, 0, 0,
+		-sinf(a), 0, cosf(a), 0,
+		0, 0, 0, 1
+	};
+	mat4_multiply(m, r, m);
+}
+
+void mat4_roll(mat4_t m, float a) {
+	mat4_t r = {
+		1, 0, 0, 0,
+		0, cosf(a), -sinf(a), 0,
+		0, sinf(a), cosf(a), 0,
+		0, 0, 0, 1
+	};
+	mat4_multiply(m, r, m);
+}
+
+void mat4_yaw(mat4_t m, float a) {
+	mat4_t r = {
+		cosf(a), -sinf(a), 0, 0,
+		sinf(a), cosf(a), 0, 0,
 		0, 0, 1, 0,
 		0, 0, 0, 1
 	};
-	return m;
+	mat4_multiply(m, r, m);
 }
 
-void matrix4_translate(matrix4_t* m, float tx, float ty, float tz) {
+void mat4_multiply(mat4_t a, mat4_t b, mat4_t result) {
+	// Store results in a temporary matrix before copying to results
+	mat4_t tmp;
 
+	// Store calculations in tmp first
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			tmp[i][j] = 0;
+			for (int k = 0; k < 4; k++) {
+				tmp[i][j] += a[i][k] * b[k][j];
+			}
+		}
+	}
+
+	// Copy results from tmp to result
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			result[i][j] = tmp[i][j];
+		}
+	}
 }
 
-void matrix4_scale(matrix4_t* m, float sx, float sy, float sz) {
-
-}
-
-void matrix4_rotate(matrix4_t* m, float a) {
-
-}
-
-vec3_t vec3_matrix4_multiply(vec3_t a, matrix4_t m) {
-	vec3_t b;
-	b.x = m.m00 * a.x + m.m01 * a.y + m.m02 * a.z + m.m03;
-	b.y = m.m10 * a.x + m.m11 * a.y + m.m12 * a.z + m.m13;
-	b.z = m.m20 * a.x + m.m21 * a.y + m.m22 * a.z + m.m23;
-	float w = m.m30 * a.x + m.m31 * a.y + m.m32 * a.z + m.m33;
-
-	//b.x = b.x / w;
-	//b.y = b.y / w;
-	//b.z = b.z / w;
-	return b;
+vec3_t vec3_mat4_multiply(const vec3_t a, const mat4_t m) {
+	float b[4] = { a.x, a.y, a.z, 1 };
+	float c[4] = { 0, 0, 0, 0 };
+	for (int i = 0; i < 4; i++) {
+		for (int j = 0; j < 4; j++) {
+			c[i] += m[i][j] * b[j];
+		}
+	}
+	vec3_t result;
+	result.x = c[0];
+	result.y = c[1];
+	result.z = c[2];
+	return result;
 }
 
 
