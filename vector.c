@@ -56,14 +56,20 @@ void matrix3_rotate(matrix3_t* m, float a) {
 	m->m22 = 1.0f;
 }
 
+matrix3_t matrix3_multiply(matrix3_t* a, matrix3_t* b) {
+	matrix3_t c;
+
+
+}
+
 vec2_t vec2_matrix3_multiply(vec2_t a, matrix3_t m) {
 	vec2_t b;
 	b.x = m.m00 * a.x + m.m01 * a.y + m.m02;
 	b.y = m.m10 * a.x + m.m11 * a.y + m.m12;
 	float w = m.m20 * a.x + m.m21 * a.y + m.m22;
 
-	b.x = b.x / w;
-	b.y = b.y / w;
+	//b.x = b.x / w;
+	//b.y = b.y / w;
 	return b;
 }
 
@@ -87,6 +93,19 @@ void matrix4_scale(matrix4_t* m, float sx, float sy, float sz) {
 
 void matrix4_rotate(matrix4_t* m, float a) {
 
+}
+
+vec3_t vec3_matrix4_multiply(vec3_t a, matrix4_t m) {
+	vec3_t b;
+	b.x = m.m00 * a.x + m.m01 * a.y + m.m02 * a.z + m.m03;
+	b.y = m.m10 * a.x + m.m11 * a.y + m.m12 * a.z + m.m13;
+	b.z = m.m20 * a.x + m.m21 * a.y + m.m22 * a.z + m.m23;
+	float w = m.m30 * a.x + m.m31 * a.y + m.m32 * a.z + m.m33;
+
+	//b.x = b.x / w;
+	//b.y = b.y / w;
+	//b.z = b.z / w;
+	return b;
 }
 
 

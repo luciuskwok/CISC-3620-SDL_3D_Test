@@ -42,6 +42,7 @@ matrix3_t matrix3_identity();
 void matrix3_translate(matrix3_t *m, float tx, float ty);
 void matrix3_scale(matrix3_t *m, float sx, float sy);
 void matrix3_rotate(matrix3_t *m, float a);
+matrix3_t matrix3_multiply(matrix3_t* a, matrix3_t* b);
 vec2_t vec2_matrix3_multiply(vec2_t a, matrix3_t m);
 
 matrix4_t matrix4_identity();

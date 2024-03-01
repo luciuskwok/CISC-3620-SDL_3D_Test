@@ -55,13 +55,16 @@ void build_cube_model() {
 }
 
 vec2_t orthographic_project_point(vec3_t pt3d, float scale2d) {
+	// Apply scaling and drop z 
 	vec2_t pt2d = { .x = pt3d.x * scale2d, .y = pt3d.y * scale2d };
+
+	// Apply 2d matrix transform
 	pt2d = vec2_matrix3_multiply(pt2d, transform_2d);
 	return pt2d;
 }
 
 vec2_t perspective_project_point(vec3_t pt3d, float scale2d) {
-	// Apply transform
+	// Apply 3d transform
 	//pt3d = multiply_transform(pt3d, cube_transform);
 
 	// Apply camera position
@@ -124,6 +127,11 @@ void update_state() {
 		// Translate camera in a circle;
 		camera_position.x = sinf(t * M_PI_2_F);
 		camera_position.y = cosf(t * M_PI_2_F);
+		break;
+	case 2:
+		// Automatic rotation
+		angle = t * M_PI_2_F;
+		matrix3_rotate(&transform_2d, angle);
 		break;
 	default:
 		// Static camera, but transform stays the same
@@ -227,17 +235,21 @@ void process_keyboard_input() {
 			animation_mode = 0;
 			transform_2d = matrix3_identity();
 			transform_3d = matrix4_identity();
+			angle = 0;
 			break;
 		case SDLK_1:
 			animation_mode = 1;
 			break;
 		case SDLK_2:
+			animation_mode = 2;
+			break;
+		case SDLK_e:
 			// Advance rotation by 1/36 of a circle
 			angle += M_PI_2_F / 36;
 			matrix3_rotate(&transform_2d, angle);
 			break;
 			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
-		case SDLK_3:
+		case SDLK_q:
 			// Advance rotation by 1/36 of a circle
 			angle -= M_PI_2_F / 36;
 			matrix3_rotate(&transform_2d, angle);
