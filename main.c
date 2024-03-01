@@ -30,7 +30,7 @@ uint32_t frame_index;
 #define CUBE_POINT_COUNT (9*9*9)
 vec3_t cube_model[CUBE_POINT_COUNT];
 vec2_t projected_points[CUBE_POINT_COUNT];
-matrix3_t transform_2d;
+mat3_t transform_2d;
 matrix4_t transform_3d;
 float angle;
 
@@ -49,8 +49,8 @@ void build_cube_model() {
 			}
 		}
 	}
-
-	transform_2d = matrix3_identity();
+	
+	mat3_get_identity(transform_2d);
 	transform_3d = matrix4_identity();
 }
 
@@ -59,7 +59,7 @@ vec2_t orthographic_project_point(vec3_t pt3d, float scale2d) {
 	vec2_t pt2d = { .x = pt3d.x * scale2d, .y = pt3d.y * scale2d };
 
 	// Apply 2d matrix transform
-	pt2d = vec2_matrix3_multiply(pt2d, transform_2d);
+	pt2d = vec2_mat3_multiply(pt2d, transform_2d);
 	return pt2d;
 }
 
@@ -73,7 +73,7 @@ vec2_t perspective_project_point(vec3_t pt3d, float scale2d) {
 	vec2_t pt2d = { .x = pt3d.x / pt3d.z, .y = pt3d.y / pt3d.z };
 
 	// Apply 2d transform
-	pt2d = vec2_matrix3_multiply(pt2d, transform_2d);
+	pt2d = vec2_mat3_multiply(pt2d, transform_2d);
 
 	// Scale for screen
 	pt2d.x = pt2d.x * scale2d;
@@ -131,7 +131,8 @@ void update_state() {
 	case 2:
 		// Automatic rotation
 		angle = t * M_PI_2_F;
-		matrix3_rotate(&transform_2d, angle);
+		mat3_get_identity(transform_2d);
+		mat3_rotate(transform_2d, angle);
 		break;
 	default:
 		// Static camera, but transform stays the same
@@ -233,7 +234,7 @@ void process_keyboard_input() {
 		case SDLK_0:
 			// Static display
 			animation_mode = 0;
-			transform_2d = matrix3_identity();
+			mat3_get_identity(transform_2d);
 			transform_3d = matrix4_identity();
 			angle = 0;
 			break;
@@ -245,14 +246,12 @@ void process_keyboard_input() {
 			break;
 		case SDLK_e:
 			// Advance rotation by 1/36 of a circle
-			angle += M_PI_2_F / 36;
-			matrix3_rotate(&transform_2d, angle);
+			mat3_rotate(transform_2d, M_PI_2_F / 36);
 			break;
 			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
 		case SDLK_q:
 			// Advance rotation by 1/36 of a circle
-			angle -= M_PI_2_F / 36;
-			matrix3_rotate(&transform_2d, angle);
+			mat3_rotate(transform_2d, -M_PI_2_F / 36);
 			break;
 			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
 		}

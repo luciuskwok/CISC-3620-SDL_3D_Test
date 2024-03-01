@@ -25,8 +25,73 @@ vec3_t vec3_subtract(vec3_t a, vec3_t b) {
 	return a;
 }
 
-matrix3_t matrix3_identity() {
-	matrix3_t m = {
+void mat3_get_identity(mat3_t m) {
+	m[0][0] = 1; m[0][1] = 0; m[0][2] = 0;
+	m[1][0] = 0; m[1][1] = 1; m[1][2] = 0;
+	m[2][0] = 0; m[2][1] = 0; m[2][2] = 1;
+}
+
+void mat3_translate(mat3_t m, float tx, float ty) {
+	mat3_t n = {
+		1, 0, tx,
+		0, 1, ty,
+		0, 0, 1
+	};
+	mat3_multiply(m, n, m);
+}
+
+void mat3_scale(mat3_t m, float sx, float sy) {
+	mat3_t n = {
+		sx, 0, 0,
+		0, sy, 0,
+		0, 0, 1
+	};
+	mat3_multiply(m, n, m);
+}
+
+void mat3_rotate(mat3_t m, float a) {
+	mat3_t n = {
+		cosf(a), -sinf(a), 0,
+		sinf(a), cos(a), 0,
+		0, 0, 1
+	};
+	mat3_multiply(m, n, m);
+}
+
+void mat3_multiply(mat3_t a, mat3_t b, mat3_t result) {
+	// Store results in a temporary matrix before copying to results
+	mat3_t tmp;
+
+	// Store calculations in tmp first
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			tmp[i][j] = 0;
+			for (int k = 0; k < 3; k++) {
+				tmp[i][j] += a[i][k] * b[k][j];
+			}
+		}
+	}
+
+	// Copy results from tmp to result
+	for (int i = 0; i < 3; i++) {
+		for (int j = 0; j < 3; j++) {
+			result[i][j] = tmp[i][j];
+		}
+	}
+}
+
+vec2_t vec2_mat3_multiply(vec2_t a, mat3_t m) {
+	vec2_t b;
+	float w;
+	b.x = m[0][0] * a.x + m[0][1] * a.y + m[0][2];
+	b.y = m[1][0] * a.x + m[1][1] * a.y + m[1][2];
+	w = m[2][0] * a.x + m[2][1] * a.y + m[2][2];
+	return b;
+}
+
+
+matrix3_struct_t matrix3_identity() {
+	matrix3_struct_t m = {
 		1, 0, 0,
 		0, 1, 0,
 		0, 0, 1
@@ -34,17 +99,17 @@ matrix3_t matrix3_identity() {
 	return m;
 }
 
-void matrix3_translate(matrix3_t* m, float tx, float ty) {
+void matrix3_translate(matrix3_struct_t* m, float tx, float ty) {
 	m->m02 += tx;
 	m->m12 += ty;
 }
 
-void matrix3_scale(matrix3_t* m, float sx, float sy) {
+void matrix3_scale(matrix3_struct_t* m, float sx, float sy) {
 	m->m00 *= sx;
 	m->m11 *= sy;
 }
 
-void matrix3_rotate(matrix3_t* m, float a) {
+void matrix3_rotate(matrix3_struct_t* m, float a) {
 	m->m00 = cosf(a);
 	m->m01 = -sinf(a);
 	m->m02 = 0.0f;
@@ -56,13 +121,7 @@ void matrix3_rotate(matrix3_t* m, float a) {
 	m->m22 = 1.0f;
 }
 
-matrix3_t matrix3_multiply(matrix3_t* a, matrix3_t* b) {
-	matrix3_t c;
-
-
-}
-
-vec2_t vec2_matrix3_multiply(vec2_t a, matrix3_t m) {
+vec2_t vec2_matrix3_multiply(vec2_t a, matrix3_struct_t m) {
 	vec2_t b;
 	b.x = m.m00 * a.x + m.m01 * a.y + m.m02;
 	b.y = m.m10 * a.x + m.m11 * a.y + m.m12;
