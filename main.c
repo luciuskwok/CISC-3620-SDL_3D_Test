@@ -32,7 +32,7 @@ vec3_t cube_model[CUBE_POINT_COUNT];
 vec2_t projected_points[CUBE_POINT_COUNT];
 matrix3_t transform_2d;
 matrix4_t transform_3d;
-float tmp_rotation_angle;
+float angle;
 
 // Camera
 vec3_t camera_position = { 0.0f, 0.0f, -5.0f };
@@ -56,7 +56,7 @@ void build_cube_model() {
 
 vec2_t orthographic_project_point(vec3_t pt3d, float scale2d) {
 	vec2_t pt2d = { .x = pt3d.x * scale2d, .y = pt3d.y * scale2d };
-	pt2d = vec2_rotate(pt2d, tmp_rotation_angle);
+	pt2d = vec2_matrix3_multiply(pt2d, transform_2d);
 	return pt2d;
 }
 
@@ -70,10 +70,7 @@ vec2_t perspective_project_point(vec3_t pt3d, float scale2d) {
 	vec2_t pt2d = { .x = pt3d.x / pt3d.z, .y = pt3d.y / pt3d.z };
 
 	// Apply 2d transform
-	//pt2d = vec2_matrix3_multiply(pt2d, transform_2d);
-
-	// Temporary: apply rotation
-	pt2d = vec2_rotate(pt2d, tmp_rotation_angle);
+	pt2d = vec2_matrix3_multiply(pt2d, transform_2d);
 
 	// Scale for screen
 	pt2d.x = pt2d.x * scale2d;
@@ -127,13 +124,11 @@ void update_state() {
 		// Translate camera in a circle;
 		camera_position.x = sinf(t * M_PI_2_F);
 		camera_position.y = cosf(t * M_PI_2_F);
-		transform_2d = matrix3_identity();
 		break;
 	default:
 		// Static camera, but transform stays the same
 		camera_position.x = 0.0f;
 		camera_position.y = 0.0f;
-		transform_2d = matrix3_identity();
 		break;
 	}
 
@@ -230,19 +225,22 @@ void process_keyboard_input() {
 		case SDLK_0:
 			// Static display
 			animation_mode = 0;
-			tmp_rotation_angle = 0.0;
+			transform_2d = matrix3_identity();
+			transform_3d = matrix4_identity();
 			break;
 		case SDLK_1:
 			animation_mode = 1;
 			break;
 		case SDLK_2:
 			// Advance rotation by 1/36 of a circle
-			tmp_rotation_angle += M_PI_2_F / 36;
+			angle += M_PI_2_F / 36;
+			matrix3_rotate(&transform_2d, angle);
 			break;
 			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
 		case SDLK_3:
 			// Advance rotation by 1/36 of a circle
-			tmp_rotation_angle -= M_PI_2_F / 36;
+			angle -= M_PI_2_F / 36;
+			matrix3_rotate(&transform_2d, angle);
 			break;
 			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
 		}
@@ -276,6 +274,7 @@ int main(int argc, char* argv[]) {
 	build_cube_model();
 
 	animation_mode = 0;
+	angle = 0;
 
 	// Game loop
 	is_running = true;
