@@ -4,9 +4,13 @@
 #include <stdio.h>
 #include <stdbool.h>
 #include <stdint.h>
+#include <math.h>
 #include <SDL.h>
 
 #include "vector.h"
+
+#define c ((float)(M_PI))
+#define M_PI_2_F ((float)(M_PI * 2.0))
 
 
 // Globals
@@ -28,6 +32,7 @@ vec3_t cube_model[CUBE_POINT_COUNT];
 vec2_t projected_points[CUBE_POINT_COUNT];
 matrix3_t transform_2d;
 matrix4_t transform_3d;
+float tmp_rotation_angle;
 
 // Camera
 vec3_t camera_position = { 0.0f, 0.0f, -5.0f };
@@ -49,12 +54,13 @@ void build_cube_model() {
 	transform_3d = matrix4_identity();
 }
 
-vec2_t orthographic_project_point(vec3_t pt3d) {
-	vec2_t pt2d = { .x = pt3d.x, .y = pt3d.y };
+vec2_t orthographic_project_point(vec3_t pt3d, float scale2d) {
+	vec2_t pt2d = { .x = pt3d.x * scale2d, .y = pt3d.y * scale2d };
+	pt2d = vec2_rotate(pt2d, tmp_rotation_angle);
 	return pt2d;
 }
 
-vec2_t perspective_project_point(vec3_t pt3d) {
+vec2_t perspective_project_point(vec3_t pt3d, float scale2d) {
 	// Apply transform
 	//pt3d = multiply_transform(pt3d, cube_transform);
 
@@ -64,7 +70,14 @@ vec2_t perspective_project_point(vec3_t pt3d) {
 	vec2_t pt2d = { .x = pt3d.x / pt3d.z, .y = pt3d.y / pt3d.z };
 
 	// Apply 2d transform
-	pt2d = vec2_matrix3_multiply(pt2d, transform_2d);
+	//pt2d = vec2_matrix3_multiply(pt2d, transform_2d);
+
+	// Temporary: apply rotation
+	pt2d = vec2_rotate(pt2d, tmp_rotation_angle);
+
+	// Scale for screen
+	pt2d.x = pt2d.x * scale2d;
+	pt2d.y = pt2d.y * scale2d;
 
 	return pt2d;
 }
@@ -73,17 +86,9 @@ void project_model() {
 	// Project the 3d model into 2d space
 	for (int i = 0; i < CUBE_POINT_COUNT; i++) {
 		vec3_t pt3d = cube_model[i];
-		vec2_t pt2d = perspective_project_point(pt3d);
+		//vec2_t pt2d = orthographic_project_point(pt3d, 240);
+		vec2_t pt2d = perspective_project_point(pt3d, 640);
 		projected_points[i] = pt2d;
-	}
-}
-
-void scale_projection() {
-	// Apply a scaling factor to the projected points
-	const int factor = 640;
-	for (int i = 0; i < CUBE_POINT_COUNT; i++) {
-		projected_points[i].x *= factor;
-		projected_points[i].y *= factor;
 	}
 }
 
@@ -114,32 +119,14 @@ void update_state() {
 	clear(0x000000FF);
 
 	// Time variable
-	const float pi = (float)M_PI;
-	float t = (float)(frame_index % 120) / 60.0f;
-	float tx, ty;
+	float t = (float)(frame_index % 480) / 480.0f;
 
 	// Variable for camera movement
 	switch (animation_mode) {
 	case 1:
 		// Translate camera in a circle;
-		camera_position.x = sinf(t * pi);
-		camera_position.y = cosf(t * pi);
-		transform_2d = matrix3_identity();
-		break;
-	case 2:
-		// Rotate the 2d transform
-		camera_position.x = 0.0f;
-		camera_position.y = 0.0f;
-		transform_2d = matrix3_identity();
-		tx = sinf(t * pi) * 0.25f;
-		ty = cosf(t * pi) * 0.25f;
-		//matrix3_translate(&transform_2d, tx, ty);
-		matrix3_rotate(&transform_2d, t * pi);
-		break;
-	case 3:
-		// Unused for now
-		camera_position.x = 0.0f;
-		camera_position.y = 0.0f;
+		camera_position.x = sinf(t * M_PI_2_F);
+		camera_position.y = cosf(t * M_PI_2_F);
 		transform_2d = matrix3_identity();
 		break;
 	default:
@@ -243,15 +230,19 @@ void process_keyboard_input() {
 		case SDLK_0:
 			// Static display
 			animation_mode = 0;
+			tmp_rotation_angle = 0.0;
 			break;
 		case SDLK_1:
 			animation_mode = 1;
 			break;
 		case SDLK_2:
-			animation_mode = 2;
+			// Advance rotation by 1/36 of a circle
+			tmp_rotation_angle += M_PI_2_F / 36;
 			break;
+			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
 		case SDLK_3:
-			animation_mode = 3;
+			// Advance rotation by 1/36 of a circle
+			tmp_rotation_angle -= M_PI_2_F / 36;
 			break;
 			// Also: SDLK_w, SDLK_a, SDLK_s, SDLK_d
 		}
@@ -262,7 +253,6 @@ void process_keyboard_input() {
 void run_render_pipeline() {
 	// Draw a 5x5 rect at every projected point
 	project_model();
-	scale_projection();
 	for (int i = 0; i < CUBE_POINT_COUNT; i++) {
 		vec2_t pt = projected_points[i];
 		int cx = pixels_w / 2;

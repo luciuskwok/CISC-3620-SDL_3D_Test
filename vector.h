@@ -34,6 +34,7 @@ typedef struct {
 
 // Functions
 
+vec2_t vec2_rotate(vec2_t p, float a);
 vec3_t vec3_add(vec3_t a, vec3_t b);
 vec3_t vec3_subtract(vec3_t a, vec3_t b);
 

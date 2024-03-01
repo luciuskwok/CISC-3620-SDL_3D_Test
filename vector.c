@@ -1,7 +1,15 @@
 // vector.c
 
 #include "vector.h"
+#include <math.h>
 
+
+vec2_t vec2_rotate(vec2_t p, float a) {
+	vec2_t q;
+	q.x = p.x * cosf(a) - p.y * sinf(a);
+	q.y = p.x * sinf(a) + p.y * cosf(a);
+	return q;
+}
 
 vec3_t vec3_add(vec3_t a, vec3_t b) {
 	a.x += b.x;
@@ -49,13 +57,14 @@ void matrix3_rotate(matrix3_t* m, float a) {
 }
 
 vec2_t vec2_matrix3_multiply(vec2_t a, matrix3_t m) {
-	a.x = m.m00 * a.x + m.m01 * a.y + m.m02;
-	a.y = m.m10 * a.x + m.m11 * a.y + m.m12;
+	vec2_t b;
+	b.x = m.m00 * a.x + m.m01 * a.y + m.m02;
+	b.y = m.m10 * a.x + m.m11 * a.y + m.m12;
 	float w = m.m20 * a.x + m.m21 * a.y + m.m22;
 
-	a.x = a.x / w;
-	a.y = a.y / w;
-	return a;
+	b.x = b.x / w;
+	b.y = b.y / w;
+	return b;
 }
 
 matrix4_t matrix4_identity() {
