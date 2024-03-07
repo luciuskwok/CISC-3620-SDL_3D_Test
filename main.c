@@ -306,8 +306,6 @@ void run_render_pipeline() {
 }
 
 int main(int argc, char* argv[]) {
-	bool wasteCycles = false;
-
 	printf("Started program.\n");
 
 	if (!initialize_windowing_system()) return 0;
@@ -322,7 +320,8 @@ int main(int argc, char* argv[]) {
 	yaw = 0;
 
 	// Game loop
-	uint32_t startTime, endTime, ticks;
+	const bool wasteCycles = false;
+	uint32_t startTime, ticks;
 	is_running = true;
 	while (is_running) {
 		// Use SDL_GetTicks() to get how long each frame takes
@@ -332,18 +331,23 @@ int main(int argc, char* argv[]) {
 		process_keyboard_input();
 		update_state();
 		run_render_pipeline();
-		endTime = SDL_GetTicks();
 
 		if (wasteCycles) {
 			while (SDL_GetTicks() - startTime < FRAME_TARGET_TIME) {
 				// waste CPU cycles
+				// Explanation: Task Manager shows about 24% CPU usage because I have a 4-core CPU, 
+				// and this code is only a single thread, only one core is running close to 100%.
 			}
 		} else {
 			// Delay to get to target frame time
-			ticks = endTime - startTime;
+			ticks = SDL_GetTicks() - startTime;
 			if (ticks < FRAME_TARGET_TIME) {
 				SDL_Delay(FRAME_TARGET_TIME - ticks);
 			}
+			// Explanation: Task Manager shows about 14% CPU usage, indicating that the delay is more
+			// efficient for CPU usage, but not dramatically so. This code counts the number of ticks
+			// that the code takes to do everything in its game loop, and subtracts that from the 
+			// target frame time, so that the total time between each frame is about the same.
 		}
 	}
 
