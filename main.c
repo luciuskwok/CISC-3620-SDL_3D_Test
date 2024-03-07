@@ -12,6 +12,8 @@
 #define M_PI_F ((float)(M_PI))
 #define M_PI_2_F ((float)(M_PI * 2.0))
 
+#define FPS (60)
+#define FRAME_TARGET_TIME (1000 / 60)
 
 // Globals
 SDL_Window* window;
@@ -304,6 +306,8 @@ void run_render_pipeline() {
 }
 
 int main(int argc, char* argv[]) {
+	bool wasteCycles = false;
+
 	printf("Started program.\n");
 
 	if (!initialize_windowing_system()) return 0;
@@ -318,12 +322,29 @@ int main(int argc, char* argv[]) {
 	yaw = 0;
 
 	// Game loop
+	uint32_t startTime, endTime, ticks;
 	is_running = true;
 	while (is_running) {
+		// Use SDL_GetTicks() to get how long each frame takes
+		// SDL_Ticks_Passed()
+
+		startTime = SDL_GetTicks();
 		process_keyboard_input();
 		update_state();
 		run_render_pipeline();
-		SDL_Delay(1000 / 60); // Wait for 1/60 second = (1000 / 60)
+		endTime = SDL_GetTicks();
+
+		if (wasteCycles) {
+			while (SDL_GetTicks() - startTime < FRAME_TARGET_TIME) {
+				// waste CPU cycles
+			}
+		} else {
+			// Delay to get to target frame time
+			ticks = endTime - startTime;
+			if (ticks < FRAME_TARGET_TIME) {
+				SDL_Delay(FRAME_TARGET_TIME - ticks);
+			}
+		}
 	}
 
 	clean_up_windowing_system();
